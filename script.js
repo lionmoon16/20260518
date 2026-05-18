@@ -8,6 +8,7 @@ const progressBar = document.getElementById("progress-bar");
 const gestureBadge = document.getElementById("gesture-badge");
 const successScreen = document.getElementById("success-screen");
 const successText = document.getElementById("success-text");
+const bgAnimationLayer = document.getElementById("bg-animation-layer");
 
 const CONFIG = {
     videoWidth: 640,
@@ -141,18 +142,20 @@ function handleGestureAction(gesture) {
     gestureOutput.innerText = `執行中... ${Math.round(progress)}%`;
 
     if (elapsed >= CONFIG.holdDuration) {
-        let bgColor, textColor, icon;
+        let bgColor, textColor, icon, animClass;
 
         if (gesture.includes("👍")) {
             document.getElementById("btn-thumbs-up").click();
             bgColor = "rgba(232, 245, 233, 0.95)"; // 綠色系背景 (👍)
             textColor = "#2e7d32";                // 深綠色文字
             icon = "👍";
+            animClass = "bg-anim-thumbs";
         } else if (gesture.includes("✌️")) {
             document.getElementById("btn-peace").click();
             bgColor = "rgba(255, 243, 224, 0.95)"; // 橘色系背景 (✌️)
             textColor = "#ef6c00";                // 深橘色文字
             icon = "✌️";
+            animClass = "bg-anim-peace";
         }
         state.triggered = true;
         // 觸發成功的視覺特效
@@ -164,29 +167,36 @@ function handleGestureAction(gesture) {
         successScreen.style.backgroundColor = bgColor;
         successText.style.color = textColor;
         successScreen.style.display = "flex";
+
+        // 觸發全螢幕背景動畫
+        bgAnimationLayer.className = animClass;
         
         // 1.5 秒後自動隱藏成功畫面
         setTimeout(() => {
             gestureBadge.style.transform = "scale(1)";
             successScreen.style.display = "none";
+            bgAnimationLayer.className = ""; // 清除動畫類別以便下次使用
         }, 1500);
     }
 }
 
 function recognizeGesture(landmarks) {
-    const isThumbUp = landmarks[4].y < landmarks[3].y && landmarks[4].y < landmarks[2].y;
-    const isIndexUp = landmarks[8].y < landmarks[6].y;
-    const isMiddleUp = landmarks[12].y < landmarks[10].y;
-    const isRingUp = landmarks[16].y < landmarks[14].y;
-    const isPinkyUp = landmarks[20].y < landmarks[18].y;
+    // 使用掌指關節 (MCP, 索引 5, 9, 13, 17) 作為基準，判斷指尖 (Tip) 是否伸直
+    const isThumbUp = landmarks[4].y < landmarks[2].y;
+    const isIndexUp = landmarks[8].y < landmarks[5].y;
+    const isMiddleUp = landmarks[12].y < landmarks[9].y;
+    const isRingUp = landmarks[16].y < landmarks[13].y;
+    const isPinkyUp = landmarks[20].y < landmarks[17].y;
 
+    // 1. 讚 👍 (僅拇指向上，其餘手指低於關節)
     if (isThumbUp && !isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
         return "讚 👍";
     }
-    if (!isThumbUp && isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) {
+    // 2. 勝利 ✌️ (食指與中指向上，無名指與小指向下；放寬對拇指的限制以增加靈敏度)
+    if (isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) {
         return "勝利 ✌️";
     }
-    const count = [isThumbUp, isIndexUp, isMiddleUp, isRingUp, isPinkyUp].filter(v => v).length;
+    const count = [isThumbUp, isIndexUp, isMiddleUp, isRingUp, isPinkyUp].filter(Boolean).length;
     return count > 0 ? `伸出 ${count} 根手指` : "已握拳";
 }
 
