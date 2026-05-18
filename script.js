@@ -181,22 +181,34 @@ function handleGestureAction(gesture) {
 }
 
 function recognizeGesture(landmarks) {
-    // 使用掌指關節 (MCP, 索引 5, 9, 13, 17) 作為基準，判斷指尖 (Tip) 是否伸直
-    const isThumbUp = landmarks[4].y < landmarks[2].y;
-    const isIndexUp = landmarks[8].y < landmarks[5].y;
-    const isMiddleUp = landmarks[12].y < landmarks[9].y;
-    const isRingUp = landmarks[16].y < landmarks[13].y;
-    const isPinkyUp = landmarks[20].y < landmarks[17].y;
+    const wrist = landmarks[0];
+    
+    // 輔助函式：計算兩點間的歐幾里得距離
+    const getDist = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 
-    // 1. 讚 👍 (僅拇指向上，其餘手指低於關節)
-    if (isThumbUp && !isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
-        return "讚 👍";
-    }
-    // 2. 勝利 ✌️ (食指與中指向上，無名指與小指向下；放寬對拇指的限制以增加靈敏度)
-    if (isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) {
+    // 判斷手指是否伸展：指尖到手腕的距離 > 第二指節到手腕的距離
+    // 索引：食指(8,6), 中指(12,10), 無名指(16,14), 小指(20,18)
+    const isIndexExtended = getDist(landmarks[8], wrist) > getDist(landmarks[6], wrist);
+    const isMiddleExtended = getDist(landmarks[12], wrist) > getDist(landmarks[10], wrist);
+    const isRingExtended = getDist(landmarks[16], wrist) > getDist(landmarks[14], wrist);
+    const isPinkyExtended = getDist(landmarks[20], wrist) > getDist(landmarks[18], wrist);
+
+    // 拇指判定：拇指尖 (4) 在 Y 軸上顯著高於其根部 (2) 且高於食指根部 (5)
+    const isThumbUp = landmarks[4].y < landmarks[2].y && landmarks[4].y < landmarks[5].y;
+
+    // 1. 勝利 ✌️：食指與中指伸展，無名指與小指收合
+    // 增加一個額外的檢查：食指尖與中指尖要有一定的距離（避免手指併攏誤判）
+    const fingersSpread = Math.abs(landmarks[8].x - landmarks[12].x) > 0.05;
+    if (isIndexExtended && isMiddleExtended && !isRingExtended && !isPinkyExtended && fingersSpread) {
         return "勝利 ✌️";
     }
-    const count = [isThumbUp, isIndexUp, isMiddleUp, isRingUp, isPinkyUp].filter(Boolean).length;
+
+    // 2. 讚 👍：僅拇指向上，其餘四指皆收合
+    if (isThumbUp && !isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+        return "讚 👍";
+    }
+
+    const count = [isThumbUp, isIndexExtended, isMiddleExtended, isRingExtended, isPinkyExtended].filter(Boolean).length;
     return count > 0 ? `伸出 ${count} 根手指` : "已握拳";
 }
 
