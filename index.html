@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>手勢辨識網站</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #FF9800;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f5f7fa; display: flex; flex-direction: column; align-items: center; padding: 40px; margin: 0; color: var(--dark); }
+        h1 { margin-bottom: 30px; font-weight: 300; letter-spacing: 2px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; }
+        .container { position: relative; width: 640px; height: 480px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        #webcam { position: absolute; transform: rotateY(180deg); width: 100%; height: 100%; object-fit: cover; }
+        #output_canvas { position: absolute; transform: rotateY(180deg); width: 100%; height: 100%; }
+        
+        .gesture-badge {
+            position: absolute; top: 20px; right: 20px; font-size: 80px; 
+            text-shadow: 0 0 20px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none; z-index: 10;
+        }
+        
+        .controls { margin-top: 25px; display: flex; gap: 20px; }
+        .btn { 
+            padding: 15px 30px; font-size: 18px; font-weight: 600; cursor: pointer; border: none; border-radius: 12px;
+            background: #eee; color: #777; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .btn.active-thumbs { background: var(--primary); color: white; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3); }
+        .btn.active-peace { background: var(--secondary); color: white; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3); }
+        
+        #progress-container { width: 100%; height: 8px; background-color: #eee; margin-top: 20px; border-radius: 4px; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background-color: #4CAF50; transition: width 0.1s; }
+        
+        #gesture_output { margin-top: 20px; font-size: 24px; font-weight: bold; color: #555; height: 35px; }
+
+        /* 成功畫面樣式 */
+        .success-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+        .success-icon { font-size: 100px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #success-text { font-size: 32px; font-weight: bold; color: var(--primary); margin-top: 10px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <h1>AI 視覺控制器</h1>
+    <div class="card">
+        <div class="container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
+            <div id="gesture-badge" class="gesture-badge"></div>
+            <div id="success-screen" class="success-screen">
+                <div class="success-icon">✅</div>
+                <div id="success-text">成功！</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="btn-thumbs-up" class="btn">指令 A (👍)</button>
+            <button id="btn-peace" class="btn">指令 B (✌️)</button>
+        </div>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="gesture_output">正在初始化 AI...</div>
+    </div>
+
+    <!-- 載入 MediaPipe 相關套件 -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
